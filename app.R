@@ -88,7 +88,7 @@ padding-bottom: 0px;
                 fluidRow(
                     column(10,
                            fluidRow(
-                             box(collapsible = TRUE,title="Sample number and prevalence",solidHeader = TRUE,
+                             box(collapsible = FALSE,title="Sample number and prevalence",solidHeader = TRUE,
                                  width = 12, status = "primary",
                                  fluidRow(
                                    column(6, 
@@ -236,16 +236,16 @@ server <- function(session, input, output) {
   
   mapSampCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
-      if((birdg()-1)+as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
-        sampCol[as.integer(cut(Samples[[birdgs()]],
+      if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
+        sampCol[as.integer(.bincode(Samples[[birdgs()]],
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
       else {
-        sampCol[as.integer(cut(Samples[[birdgs()]][,daten()],
+        sampCol[as.integer(.bincode(Samples[[birdgs()]][,daten()],
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
     } else {
-      if((birdg()-1)+as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
+      if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
         sampCol200[as.integer(.bincode(Samples[[birdgs()]],
                                        breaks=c(0, Q200[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
@@ -258,7 +258,7 @@ server <- function(session, input, output) {
 
   histSampCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
-      if((birdg()-1)+as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
+      if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
         sampCol[as.integer(cut(Samples[[birdgs()]][sampShedID()],
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
@@ -267,7 +267,7 @@ server <- function(session, input, output) {
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
     } else {
-      if((birdg()-1)+as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
+      if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
         sampCol200[as.integer(.bincode(Samples[[birdgs()]][sampShedID()],
                                        breaks=c(0, Q200[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
@@ -280,14 +280,14 @@ server <- function(session, input, output) {
   
   mapPrevCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
-      if((birdg()-1)+as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
+      if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
         cc <- prevCol[as.integer(cut(Samples[[birdgs()+32]],
                                      breaks=c(0,0.001,0.2,0.4,0.6,0.8,1.0),include.lowest = TRUE, right = FALSE))+1]}
       else {
         cc <- prevCol[as.integer(cut(Samples[[birdgs()+32]][,daten()],
                                      breaks=c(0,0.001,0.2,0.4,0.6,0.8,1.0),include.lowest = TRUE, right = FALSE))+1]}
     } else {
-      if((birdg()-1)+as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
+      if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
         cc <- prevCol200[as.integer(cut(Samples[[birdgs()+32]],
                                         breaks=c(0,0.001,seq(0.005,1.0,0.005)),include.lowest = TRUE, right = FALSE))+1]}
       else {
@@ -300,14 +300,14 @@ server <- function(session, input, output) {
   
   histPrevCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
-      if((birdg()-1)+as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
+      if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
         cc <- prevCol[as.integer(cut(Samples[[birdgs()+32]][sampShedID()],
                                      breaks=c(0,0.001,0.2,0.4,0.6,0.8,1.0),include.lowest = TRUE, right = FALSE))+1]}
       else {
         cc <- prevCol[as.integer(cut(Samples[[birdgs()+32]][sampShedID(),],
                                      breaks=c(0,0.001,0.2,0.4,0.6,0.8,1.0),include.lowest = TRUE, right = FALSE))+1]}
     } else {
-      if((birdg()-1)+as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
+      if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
         cc <- prevCol200[as.integer(cut(Samples[[birdgs()+32]][sampShedID()],
                                         breaks=c(0,0.001,seq(0.005,1.0,0.005)),include.lowest = TRUE, right = FALSE))+1]}
       else {

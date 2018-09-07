@@ -5,6 +5,6 @@ account: christopherdavis
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 413131
-bundleId: 1574690
+bundleId: 1574781
 url: https://christopherdavis.shinyapps.io/avianinfluenza/
-when: 1536335523.75468
+when: 1536338176.73874

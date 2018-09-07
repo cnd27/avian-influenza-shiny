@@ -101,7 +101,7 @@ padding-bottom: 0px;
                                radioButtons("birdGroup", "Bird Group:", choices = c("All"=1,"Dabbling Ducks"=2,
                                                                                     "Diving Ducks"=3,"Anserinae"=4),
                                             selected = 1, inline = FALSE),
-                               radioButtons("periodt", "Time interval:", choices = c("1 month"=1,"3 months"=2,"Season"=3, "Total time period" = 4),
+                               radioButtons("periodt", "Time interval:", choices = c("1 month"=1,"3 months"=2,"Season"=3, "Yearly" = 4, "Total time period" = 5),
                                             selected = 3, inline = FALSE),
                                radioButtons("averaget", "Compare by:", choices = c("Individual years"=1,"Over all years"=2),
                                             selected = 1, inline = FALSE),
@@ -155,13 +155,13 @@ server <- function(session, input, output) {
     "Note that seasons are overlapping and so some data is duplicated in this view.")))
   
   output$slidertext <- renderText({
-    if (input$periodt != 4){
+    if (input$periodt != 5){
       paste('Slide to change time:')
     }
   })
   
   output$timeTitle <- renderText({
-    if (input$periodt == 4){
+    if (input$periodt == 5){
       paste("<b>Total</b>")
     } else {
       paste("<b>Time: ", input$time, "</b>")
@@ -197,7 +197,7 @@ server <- function(session, input, output) {
   output$options3 <- renderUI({
     if (input$optionstext %% 2){
       checkboxInput("timeline", "View time line", value = TRUE)
-      if (input$periodt == 4){
+      if (input$periodt == 5){
         disabled(checkboxInput("timeline", "View time line", value = TRUE))
       } else {
         checkboxInput("timeline", "View time line", value = TRUE)
@@ -206,21 +206,23 @@ server <- function(session, input, output) {
   })
   
   daten <- reactive({(
-    switch(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1),
+    switch(as.integer(input$periodt) + 5*(as.integer(input$averaget)-1),
            which(input$time==allM1),
            which(input$time==allM3),
            which(input$time==allS),
            NULL,
+           NULL,
            which(input$time==M1),
            which(input$time==M3),
            which(input$time==S),
+           NULL,
            NULL))})
   birdg <- reactive({as.integer(input$birdGroup)})
-  birdgs <- reactive({8*(birdg()-1)+as.integer(input$periodt) + 4*(as.integer(input$averaget)-1)})
+  birdgs <- reactive({10*(birdg()-1)+as.integer(input$periodt) + 5*(as.integer(input$averaget)-1)})
   
   mapSampCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
-      if(input$periodt == 4){
+      if(input$periodt == 5){
         sampCol[as.integer(cut(Samples[[birdgs()]],
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
@@ -229,7 +231,7 @@ server <- function(session, input, output) {
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
     } else {
-      if(input$periodt == 4){
+      if(input$periodt == 5){
         sampCol200[as.integer(.bincode(Samples[[birdgs()]],
                                        breaks=c(0, Q200[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
@@ -242,7 +244,7 @@ server <- function(session, input, output) {
 
   histSampCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
-      if(input$periodt == 4){
+      if(input$periodt == 5){
         sampCol[as.integer(cut(Samples[[birdgs()]][sampShedID()],
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
@@ -251,7 +253,7 @@ server <- function(session, input, output) {
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
     } else {
-      if(input$periodt == 4){
+      if(input$periodt == 5){
         sampCol200[as.integer(.bincode(Samples[[birdgs()]][sampShedID()],
                                        breaks=c(0, Q200[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
@@ -264,18 +266,18 @@ server <- function(session, input, output) {
   
   mapPrevCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
-      if(input$periodt == 4){
-        cc <- prevCol[as.integer(cut(Samples[[birdgs()+32]],
+      if(input$periodt == 5){
+        cc <- prevCol[as.integer(cut(Samples[[birdgs()+40]],
                                      breaks=c(0,0.001,0.2,0.4,0.6,0.8,1.0),include.lowest = TRUE, right = FALSE))+1]}
       else {
-        cc <- prevCol[as.integer(cut(Samples[[birdgs()+32]][,daten()],
+        cc <- prevCol[as.integer(cut(Samples[[birdgs()+40]][,daten()],
                                      breaks=c(0,0.001,0.2,0.4,0.6,0.8,1.0),include.lowest = TRUE, right = FALSE))+1]}
     } else {
-      if(input$periodt == 4){
-        cc <- prevCol200[as.integer(cut(Samples[[birdgs()+32]],
+      if(input$periodt == 5){
+        cc <- prevCol200[as.integer(cut(Samples[[birdgs()+40]],
                                         breaks=c(0,0.001,seq(0.005,1.0,0.005)),include.lowest = TRUE, right = FALSE))+1]}
       else {
-        cc <- prevCol200[as.integer(cut(Samples[[birdgs()+32]][,daten()],
+        cc <- prevCol200[as.integer(cut(Samples[[birdgs()+40]][,daten()],
                                         breaks=c(0,0.001,seq(0.005,1.0,0.005)),include.lowest = TRUE, right = FALSE))+1]}
     }
     cc[is.na(cc)] <- prevCol[1]
@@ -284,18 +286,18 @@ server <- function(session, input, output) {
   
   histPrevCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
-      if(input$periodt == 4){
-        cc <- prevCol[as.integer(cut(Samples[[birdgs()+32]][sampShedID()],
+      if(input$periodt == 5){
+        cc <- prevCol[as.integer(cut(Samples[[birdgs()+40]][sampShedID()],
                                      breaks=c(0,0.001,0.2,0.4,0.6,0.8,1.0),include.lowest = TRUE, right = FALSE))+1]}
       else {
-        cc <- prevCol[as.integer(cut(Samples[[birdgs()+32]][sampShedID(),],
+        cc <- prevCol[as.integer(cut(Samples[[birdgs()+40]][sampShedID(),],
                                      breaks=c(0,0.001,0.2,0.4,0.6,0.8,1.0),include.lowest = TRUE, right = FALSE))+1]}
     } else {
-      if(input$periodt == 4){
-        cc <- prevCol200[as.integer(cut(Samples[[birdgs()+32]][sampShedID()],
+      if(input$periodt == 5){
+        cc <- prevCol200[as.integer(cut(Samples[[birdgs()+40]][sampShedID()],
                                         breaks=c(0,0.001,seq(0.005,1.0,0.005)),include.lowest = TRUE, right = FALSE))+1]}
       else {
-        cc <- prevCol200[as.integer(cut(Samples[[birdgs()+32]][sampShedID(),],
+        cc <- prevCol200[as.integer(cut(Samples[[birdgs()+40]][sampShedID(),],
                                         breaks=c(0,0.001,seq(0.005,1.0,0.005)),include.lowest = TRUE, right = FALSE))+1]}
     }
     cc[is.na(cc)] <- prevCol[1]
@@ -404,7 +406,7 @@ server <- function(session, input, output) {
   output$SamplesPlot <- renderPlot({
     op <- par(mar = c(3.5,4,1,1))
     if (is.na(sampShedName())){
-      if (input$periodt == 4){
+      if (input$periodt == 5){
         barplot(0,main = NULL,xlab = "", ylab = "Number of samples",ylim = c(0,10.5), 
                 space = 0, names.arg = c("Total"))
         axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
@@ -438,7 +440,7 @@ server <- function(session, input, output) {
         text(0.45*length(tvals()),5,"Click on the map to select a watershed")
       }
     } else {
-      if (input$periodt == 4){
+      if (input$periodt == 5){
         if (Samples[[birdgs()]][sampShedID()]>0){
           barplot(Samples[[birdgs()]][sampShedID()],main = NULL,xlab = "", ylab = "Number of samples",
                   space = 0, col = histSampCols(), names.arg = c("Total"), ylim = c(0,round(1.1*Samples[[birdgs()]][sampShedID()])))
@@ -528,7 +530,7 @@ server <- function(session, input, output) {
     op <- par(mar = c(3.5,4,1,1))
     if (is.na(sampShedName())){
       
-      if (input$periodt == 4){
+      if (input$periodt == 5){
         barplot(0,xlab = "", ylab = "Prevalence (%)",
                 space = 0, names.arg = c("Total"), ylim = c(0,105))
         axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
@@ -562,14 +564,14 @@ server <- function(session, input, output) {
         text(0.5*length(tvals()),50,"Click on the map to select a watershed")
       }
     } else {
-      if (input$periodt == 4){
-        barplot(100*Samples[[birdgs()+32]][sampShedID()],xlab = "", ylab = "Prevalence (%)",
+      if (input$periodt == 5){
+        barplot(100*Samples[[birdgs()+40]][sampShedID()],xlab = "", ylab = "Prevalence (%)",
                 space = 0, col = histPrevCols(), names.arg = c("Total"), ylim = c(0,105))
         lines(c(0,1),c(0,0))
         axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
       } else {
         if (input$averaget == 1){
-          barplot(100*Samples[[birdgs()+32]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
+          barplot(100*Samples[[birdgs()+40]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
                   space = 0, col = histPrevCols(), names.arg = tvals(), ylim = c(0,105), xaxt = "n")
           if (input$periodt == 3) {
             axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
@@ -585,7 +587,7 @@ server <- function(session, input, output) {
             lines(c(0,120),c(0,0))
           }
         } else {
-          barplot(100*Samples[[birdgs()+32]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
+          barplot(100*Samples[[birdgs()+40]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
                   space = 0, col = histPrevCols(), names.arg = tvals(), ylim = c(0,105))
           if (input$periodt == 3) {
             axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
@@ -611,7 +613,7 @@ server <- function(session, input, output) {
   })
   
   output$slider <- renderUI({
-    if (input$periodt == 4){
+    if (input$periodt == 5){
       NULL
     } else {
       sliderTextInput("time",NULL,tvals(),grid=FALSE,force_edges = TRUE, animate = 
@@ -622,7 +624,7 @@ server <- function(session, input, output) {
 })
   
   tvals <- reactive({
-    switch(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1),
+    switch(as.integer(input$periodt) + 5*(as.integer(input$averaget)-1),
       allM1,
       allM3,
       allS,
@@ -634,7 +636,7 @@ server <- function(session, input, output) {
   })
   
   observeEvent(input$periodt,{
-    if (input$periodt == 4) {
+    if (input$periodt == 5) {
       disable("averaget")
     } else {
       enable("averaget")
@@ -644,7 +646,7 @@ server <- function(session, input, output) {
   observeEvent({
     input$periodt
   },{
-    if (input$periodt == 4) {
+    if (input$periodt == 5) {
       disable("timeline")
     } else {
       enable("timeline")

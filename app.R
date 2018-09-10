@@ -14,16 +14,16 @@ load("data/shinySAMPLES.RData")
 load("data/shinyQ.RData")
 load("data/shinyQ200.RData")
 sampCol <-c("grey60", brewer.pal(5, "BuGn"))
-sampCol200 <-c("grey60", colorRampPalette(brewer.pal(7, "BuGn"))(200))
+sampCol200 <-c("grey60", colorRampPalette(brewer.pal(5, "BuGn"))(200))
 prevCol <-c("grey20","grey60", brewer.pal(5, "OrRd"))
-prevCol200 <-c("grey20","grey60", colorRampPalette(brewer.pal(7, "OrRd"))(200))
+prevCol200 <-c("grey20","grey60", colorRampPalette(brewer.pal(5, "OrRd"))(200))
 mord = c(4,5,6,7,8,9,10,11,12,1,2,3)
 M1 <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 M3 <- c("Dec - Feb","Mar - May", "Jun - Aug", "Sep - Nov")
 S <- c("Summer breeding", "Fall migration", "Over-wintering")
 allY <- seq(2007,2017,1)
 allM1 <- paste(M1, as.character(rep(seq(2007,2017,1),each=12)),sep = " ")[4:122]
-allM3 <- paste(M3, as.character(rep(seq(2007,2016,1),each=4)),sep = " ")
+allM3 <- paste(M3[c(2,3,4,1)], as.character(rep(seq(2007,2016,1),each=4)),sep = " ")
 allS <- paste(S,as.character(rep(seq(2007,2016,1),each=3)))
 allM3[4] <- paste(allM3[4],"/08", sep = "")
 allM3[8] <- paste(allM3[8],"/09", sep = "")
@@ -113,7 +113,7 @@ padding-bottom: 0px;
                                                                                     "Diving Ducks"=3,"Anserinae"=4),
                                             selected = 1, inline = FALSE),
                                radioButtons("periodt", "Time interval:", choices = c("1 month"=1,"3 months"=2,"Season"=3, "Year" = 4),
-                                            selected = 3, inline = FALSE),
+                                            selected = 2, inline = FALSE),
                                radioButtons("averaget", "Compare by:", choices = c("Individual years"=1,"Over all years"=2),
                                             selected = 1, inline = FALSE),
                                actionButton("optionstext", "See more options"),
@@ -134,6 +134,19 @@ tags$footer("Web app created by Christopher Davis, University of Warwick.", alig
 )
 
 server <- function(session, input, output) {
+  
+  prevprev <- reactive({
+    if (!is.na(sampShedName()) && sampShedName() == "All watersheds"){
+      if (input$periodt == 4 && input$averaget == 2){
+        pp <- sum(Samples[[birdgs()+32]]*Samples[[birdgs()]],na.rm=TRUE)/sum(Samples[[birdgs()]], na.rm=TRUE)
+      } else {
+        pp <- colSums(Samples[[birdgs()+32]]*Samples[[birdgs()]], na.rm = TRUE)/colSums(Samples[[birdgs()]], na.rm=TRUE)
+      }
+      return(pp)
+    } else {
+      return(NULL)
+    }
+  })
   
   output$dropdownmenu = renderMenu({
     dropdownMenu(
@@ -176,7 +189,7 @@ server <- function(session, input, output) {
   
   output$timeTitle <- renderText({
     if (as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
-      paste("<b>Total</b>")
+      paste("<b>Time: Total</b>")
     } else {
       paste("<b>Time: ", input$time, "</b>")
     }
@@ -185,10 +198,8 @@ server <- function(session, input, output) {
   output$shedTitle <- renderText({
     if (!is.na(sampShedName())){
       paste("<b>Watershed: ", sampShedName(), "</b>")
-    } else if (TRUE){
-      paste("<b>Watershed</b>")
     } else {
-      paste("<b>Watershed</b>")
+      paste("<b>Watershed: None selected</b>")
     }
   })
 
@@ -237,45 +248,52 @@ server <- function(session, input, output) {
   mapSampCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
       if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
-        sampCol[as.integer(.bincode(Samples[[birdgs()]],
+        cc <- sampCol[as.integer(.bincode(Samples[[birdgs()]],
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
       else {
-        sampCol[as.integer(.bincode(Samples[[birdgs()]][,daten()],
+        cc <- sampCol[as.integer(.bincode(Samples[[birdgs()]][,daten()],
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
     } else {
       if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
-        sampCol200[as.integer(.bincode(Samples[[birdgs()]],
+        cc <- sampCol200[as.integer(.bincode(Samples[[birdgs()]],
                                        breaks=c(0, Q200[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
       else {
-        sampCol200[as.integer(.bincode(Samples[[birdgs()]][,daten()],
+        cc <- sampCol200[as.integer(.bincode(Samples[[birdgs()]][,daten()],
                                        breaks=c(0, Q200[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
     }
+    if (length(cc)>1){
+      cc <- c(cc, brewer.pal(9, "BuGn")[9])
+    } else {
+      cc <- c(rep("white",202), brewer.pal(9, "BuGn")[9])
+    }
+    return(cc)
   })
 
   histSampCols <- reactive({
     if (length(input$colours)==0 || input$colours == 1){
       if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
-        sampCol[as.integer(cut(Samples[[birdgs()]][sampShedID()],
+        cc <- sampCol[as.integer(cut(Samples[[birdgs()]][sampShedID()],
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
       else {
-        sampCol[as.integer(cut(Samples[[birdgs()]][sampShedID(),],
+        cc <-sampCol[as.integer(cut(Samples[[birdgs()]][sampShedID(),],
                                breaks=c(0, Q[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
     } else {
       if(as.integer(input$periodt) + 4*(as.integer(input$averaget)-1) == 8){
-        sampCol200[as.integer(.bincode(Samples[[birdgs()]][sampShedID()],
+        cc <- sampCol200[as.integer(.bincode(Samples[[birdgs()]][sampShedID()],
                                        breaks=c(0, Q200[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
       else {
-        sampCol200[as.integer(.bincode(Samples[[birdgs()]][sampShedID(),],
+        cc <- sampCol200[as.integer(.bincode(Samples[[birdgs()]][sampShedID(),],
                                        breaks=c(0, Q200[[birdgs()]]),include.lowest = TRUE, right = FALSE))]
       }
     }
+    return(cc)
   })
   
   mapPrevCols <- reactive({
@@ -295,6 +313,11 @@ server <- function(session, input, output) {
                                         breaks=c(0,0.001,seq(0.005,1.0,0.005)),include.lowest = TRUE, right = FALSE))+1]}
     }
     cc[is.na(cc)] <- prevCol[1]
+    if (length(cc)>1){
+      cc <- c(cc, brewer.pal(9, "OrRd")[9])
+    } else {
+      cc <- c(rep("white",202), brewer.pal(9, "OrRd")[9])
+    }
     return(cc)
   })
   
@@ -359,6 +382,7 @@ server <- function(session, input, output) {
     op <- par(mar = c(0,0,0,0))
     plot(huc4plot,col=mapSampCols(),xlim=c(-1e6,4e6),
          ylim=c(2900000,6000000))
+    text(2.95e6,3.62e6, "All")
     if (length(input$colours)==0 || input$colours == 1){
       if (birdgs() %ni% c(17,18,19,20,21,22,23)){
         legend("right",title = "Number of samples:",
@@ -400,6 +424,7 @@ server <- function(session, input, output) {
     op <- par(mar = c(0,0,0,0))
     plot(huc4plot,col=mapPrevCols(),xlim=c(-1e6,4e6),
          ylim=c(2900000,6000000),main=NULL)
+    text(2.95e6,3.62e6, "All")
     if (length(input$colours)==0 || input$colours==1){
       legend("right",title = "Prevalence (%):",
              legend = c("N/A", "0","0 - 20","20 - 40","40 - 60","60 - 80","80 - 100"), fill=prevCol)
@@ -465,94 +490,184 @@ server <- function(session, input, output) {
     } else {
       if (input$periodt == 4){
         if (input$averaget == 2){
-          if (Samples[[birdgs()]][sampShedID()]>0){
-            barplot(Samples[[birdgs()]][sampShedID()],main = NULL,xlab = "", ylab = "Number of samples",
-                    space = 0, col = histSampCols(), names.arg = c("Total"), ylim = c(0,round(1.1*Samples[[birdgs()]][sampShedID()])))
+          if (sampShedName() == "All watersheds"){
+            barplot(sum(Samples[[birdgs()]]),main = NULL,xlab = "", ylab = "Number of samples",
+                    space = 0, names.arg = c("Total"), ylim = c(0,round(1.1*sum(Samples[[birdgs()]]))), col = brewer.pal(6, "BuGn")[6])
             axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
           } else {
-            barplot(0,main = NULL,xlab = "", ylab = "Number of samples",ylim = c(0,10.5), names.arg = c("Total"))
-            axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
+            if (Samples[[birdgs()]][sampShedID()]>0){
+              barplot(Samples[[birdgs()]][sampShedID()],main = NULL,xlab = "", ylab = "Number of samples",
+                      space = 0, col = histSampCols(), names.arg = c("Total"), ylim = c(0,round(1.1*Samples[[birdgs()]][sampShedID()])))
+              axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
+            } else {
+              barplot(0,main = NULL,xlab = "", ylab = "Number of samples",ylim = c(0,10.5), names.arg = c("Total"))
+              axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
+            }
           }
         } else {
-          if (max(Samples[[birdgs()]][sampShedID(),])>0){
-            barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", ylab = "Number of samples",
-                    space = 0, col = histSampCols(), names.arg = tvals(), xaxt = "n", ylim = c(0,round(1.1*max(Samples[[birdgs()]][sampShedID(),]))))
-            axis(1, at=c(seq(0.5,10.5,1)), labels=seq(2007,2017,1), tick = FALSE)
-            axis(1, at=c(seq(0,11,1)), labels=FALSE, tick = TRUE)
-            lines(c(0,11),c(0,0))
+          if (sampShedName() == "All watersheds"){
+            if (max(Samples[[birdgs()]])>0){
+              barplot(colSums(Samples[[birdgs()]]),main = NULL,xlab = "", ylab = "Number of samples",
+                      space = 0, names.arg = tvals(), xaxt = "n", ylim = c(0,round(1.1*max(colSums(Samples[[birdgs()]])))), col = brewer.pal(6, "BuGn")[6])
+              axis(1, at=c(seq(0.5,10.5,1)), labels=seq(2007,2017,1), tick = FALSE)
+              axis(1, at=c(seq(0,11,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,11),c(0,0))
+            } else {
+              barplot(colSums(Samples[[birdgs()]]),main = NULL,xlab = "", 
+                      ylab = "Number of samples",ylim = c(0,10.5),space = 0, xaxt = "n", col = brewer.pal(6, "BuGn")[6])
+              axis(1, at=c(seq(0.5,10.5,1)), labels=seq(2007,2017,1), tick = FALSE)
+              axis(1, at=c(seq(0,11,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,11),c(0,0))
+            }
           } else {
-            barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", 
-                    ylab = "Number of samples",ylim = c(0,10.5),space = 0, xaxt = "n")
-            axis(1, at=c(seq(0.5,10.5,1)), labels=seq(2007,2017,1), tick = FALSE)
-            axis(1, at=c(seq(0,11,1)), labels=FALSE, tick = TRUE)
-            lines(c(0,11),c(0,0))
+            if (max(Samples[[birdgs()]][sampShedID(),])>0){
+              barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", ylab = "Number of samples",
+                      space = 0, col = histSampCols(), names.arg = tvals(), xaxt = "n", ylim = c(0,round(1.1*max(Samples[[birdgs()]][sampShedID(),]))))
+              axis(1, at=c(seq(0.5,10.5,1)), labels=seq(2007,2017,1), tick = FALSE)
+              axis(1, at=c(seq(0,11,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,11),c(0,0))
+            } else {
+              barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", 
+                      ylab = "Number of samples",ylim = c(0,10.5),space = 0, xaxt = "n")
+              axis(1, at=c(seq(0.5,10.5,1)), labels=seq(2007,2017,1), tick = FALSE)
+              axis(1, at=c(seq(0,11,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,11),c(0,0))
+            }
           }
         }
       } else {
-        if (max(Samples[[birdgs()]][sampShedID(),])>0){
-          if (input$averaget == 1){
-            barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", ylab = "Number of samples",
-                    space = 0, col = histSampCols(), names.arg = tvals(), xaxt = "n", ylim = c(0,round(1.1*max(Samples[[birdgs()]][sampShedID(),]))))
-            if (input$periodt == 3) {
-              axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
-              axis(1, at=c(seq(8/3,30,3)), labels=FALSE, tick = TRUE)
-              lines(c(0,30),c(0,0))
-            } else if (input$periodt == 2){
-              axis(1, at=c(5/3,seq(16/3,40,4)), labels=seq(2007,2016,1), tick = FALSE)
-              axis(1, at=c(seq(10/3,40,4)), labels=FALSE, tick = TRUE)
-              lines(c(0,40),c(0,0))
+        if (sampShedName() == "All watersheds"){
+          if (max(colSums(Samples[[birdgs()]]))>0){
+            if (input$averaget == 1){
+              barplot(colSums(Samples[[birdgs()]]),main = NULL,xlab = "", ylab = "Number of samples",
+                      space = 0, names.arg = tvals(), xaxt = "n", ylim = c(0,round(1.1*max(colSums(Samples[[birdgs()]])))), col = brewer.pal(6, "BuGn")[6])
+              if (input$periodt == 3) {
+                axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(8/3,30,3)), labels=FALSE, tick = TRUE)
+                lines(c(0,30),c(0,0))
+              } else if (input$periodt == 2){
+                axis(1, at=c(5/3,seq(16/3,40,4)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(10/3,40,4)), labels=FALSE, tick = TRUE)
+                lines(c(0,40),c(0,0))
+              } else {
+                axis(1, at=c(4.5,seq(15,120,12)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(9,120,12)), labels=FALSE, tick = TRUE)
+                lines(c(0,120),c(0,0))
+              }
             } else {
-              axis(1, at=c(4.5,seq(15,120,12)), labels=seq(2007,2016,1), tick = FALSE)
-              axis(1, at=c(seq(9,120,12)), labels=FALSE, tick = TRUE)
-              lines(c(0,120),c(0,0))
+              barplot(colSums(Samples[[birdgs()]]),main = NULL,xlab = "", ylab = "Number of samples",
+                      space = 0, names.arg = tvals(), ylim = c(0,round(1.1*max(colSums(Samples[[birdgs()]])))), col = brewer.pal(6, "BuGn")[6])
+              if (input$periodt == 3) {
+                axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,3),c(0,0))
+              } else if (input$periodt == 2){
+                axis(1, at=c(seq(0,4,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,4),c(0,0))
+              } else {
+                axis(1, at=c(seq(0,12,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,12),c(0,0))
+              }
             }
+            title(xlab = "Time", line=2.5)
           } else {
-            barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", ylab = "Number of samples",
-                    space = 0, col = histSampCols(), names.arg = tvals(), ylim = c(0,round(1.1*max(Samples[[birdgs()]][sampShedID(),]))))
-            if (input$periodt == 3) {
-              axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
-              lines(c(0,3),c(0,0))
-            } else if (input$periodt == 2){
-              axis(1, at=c(seq(0,4,1)), labels=FALSE, tick = TRUE)
-              lines(c(0,4),c(0,0))
+            if (input$averaget == 1){
+              barplot(colSums(Samples[[birdgs()]]),main = NULL,xlab = "", 
+                      ylab = "Number of samples",ylim = c(0,10.5),space = 0, xaxt = "n", col = brewer.pal(6, "BuGn")[6])
+              if (input$periodt == 3) {
+                axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(8/3,30,3)), labels=FALSE, tick = TRUE)
+                lines(c(0,30),c(0,0))
+              } else if (input$periodt == 2){
+                axis(1, at=c(5/3,seq(16/3,40,4)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(10/3,40,4)), labels=FALSE, tick = TRUE)
+                lines(c(0,40),c(0,0))
+              } else {
+                axis(1, at=c(4.5,seq(15,120,12)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(9,120,12)), labels=FALSE, tick = TRUE)
+                lines(c(0,120),c(0,0))
+              }
             } else {
-              axis(1, at=c(seq(0,12,1)), labels=FALSE, tick = TRUE)
-              lines(c(0,12),c(0,0))
+              barplot(colSums(Samples[[birdgs()]]),main = NULL,xlab = "", 
+                      ylab = "Number of samples",ylim = c(0,10.5),space = 0, col = brewer.pal(6, "BuGn")[6])
+              if (input$periodt == 3) {
+                axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,3),c(0,0))
+              } else if (input$periodt == 2){
+                axis(1, at=c(seq(0,4,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,4),c(0,0))
+              } else {
+                axis(1, at=c(seq(0,12,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,12),c(0,0))
+              }
             }
+            title(xlab = "Time", line=2.5)
           }
-          title(xlab = "Time", line=2.5)
         } else {
-          if (input$averaget == 1){
-            barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", 
-                    ylab = "Number of samples",ylim = c(0,10.5),space = 0, xaxt = "n")
-            if (input$periodt == 3) {
-              axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
-              axis(1, at=c(seq(8/3,30,3)), labels=FALSE, tick = TRUE)
-              lines(c(0,30),c(0,0))
-            } else if (input$periodt == 2){
-              axis(1, at=c(5/3,seq(16/3,40,4)), labels=seq(2007,2016,1), tick = FALSE)
-              axis(1, at=c(seq(10/3,40,4)), labels=FALSE, tick = TRUE)
-              lines(c(0,40),c(0,0))
+          if (max(Samples[[birdgs()]][sampShedID(),])>0){
+            if (input$averaget == 1){
+              barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", ylab = "Number of samples",
+                      space = 0, col = histSampCols(), names.arg = tvals(), xaxt = "n", ylim = c(0,round(1.1*max(Samples[[birdgs()]][sampShedID(),]))))
+              if (input$periodt == 3) {
+                axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(8/3,30,3)), labels=FALSE, tick = TRUE)
+                lines(c(0,30),c(0,0))
+              } else if (input$periodt == 2){
+                axis(1, at=c(5/3,seq(16/3,40,4)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(10/3,40,4)), labels=FALSE, tick = TRUE)
+                lines(c(0,40),c(0,0))
+              } else {
+                axis(1, at=c(4.5,seq(15,120,12)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(9,120,12)), labels=FALSE, tick = TRUE)
+                lines(c(0,120),c(0,0))
+              }
             } else {
-              axis(1, at=c(4.5,seq(15,120,12)), labels=seq(2007,2016,1), tick = FALSE)
-              axis(1, at=c(seq(9,120,12)), labels=FALSE, tick = TRUE)
-              lines(c(0,120),c(0,0))
+              barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", ylab = "Number of samples",
+                      space = 0, col = histSampCols(), names.arg = tvals(), ylim = c(0,round(1.1*max(Samples[[birdgs()]][sampShedID(),]))))
+              if (input$periodt == 3) {
+                axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,3),c(0,0))
+              } else if (input$periodt == 2){
+                axis(1, at=c(seq(0,4,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,4),c(0,0))
+              } else {
+                axis(1, at=c(seq(0,12,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,12),c(0,0))
+              }
             }
+            title(xlab = "Time", line=2.5)
           } else {
-            barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", 
-                    ylab = "Number of samples",ylim = c(0,10.5),space = 0)
-            if (input$periodt == 3) {
-              axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
-              lines(c(0,3),c(0,0))
-            } else if (input$periodt == 2){
-              axis(1, at=c(seq(0,4,1)), labels=FALSE, tick = TRUE)
-              lines(c(0,4),c(0,0))
+            if (input$averaget == 1){
+              barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", 
+                      ylab = "Number of samples",ylim = c(0,10.5),space = 0, xaxt = "n")
+              if (input$periodt == 3) {
+                axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(8/3,30,3)), labels=FALSE, tick = TRUE)
+                lines(c(0,30),c(0,0))
+              } else if (input$periodt == 2){
+                axis(1, at=c(5/3,seq(16/3,40,4)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(10/3,40,4)), labels=FALSE, tick = TRUE)
+                lines(c(0,40),c(0,0))
+              } else {
+                axis(1, at=c(4.5,seq(15,120,12)), labels=seq(2007,2016,1), tick = FALSE)
+                axis(1, at=c(seq(9,120,12)), labels=FALSE, tick = TRUE)
+                lines(c(0,120),c(0,0))
+              }
             } else {
-              axis(1, at=c(seq(0,12,1)), labels=FALSE, tick = TRUE)
-              lines(c(0,12),c(0,0))
+              barplot(Samples[[birdgs()]][sampShedID(),],main = NULL,xlab = "", 
+                      ylab = "Number of samples",ylim = c(0,10.5),space = 0)
+              if (input$periodt == 3) {
+                axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,3),c(0,0))
+              } else if (input$periodt == 2){
+                axis(1, at=c(seq(0,4,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,4),c(0,0))
+              } else {
+                axis(1, at=c(seq(0,12,1)), labels=FALSE, tick = TRUE)
+                lines(c(0,12),c(0,0))
+              }
             }
+            title(xlab = "Time", line=2.5)
           }
-          title(xlab = "Time", line=2.5)
         }
       }
       if (is.null(input$timeline)){
@@ -613,49 +728,98 @@ server <- function(session, input, output) {
     } else {
       if (input$periodt == 4){
         if (input$averaget == 2){
-          barplot(100*Samples[[birdgs()+32]][sampShedID()],xlab = "", ylab = "Prevalence (%)",
-                  space = 0, col = histPrevCols(), names.arg = c("Total"), ylim = c(0,105))
-          lines(c(0,1),c(0,0))
-          axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
+          if (sampShedName() == "All watersheds"){
+            barplot(100*prevprev(),xlab = "", ylab = "Prevalence (%)",
+                    space = 0, names.arg = c("Total"), ylim = c(0,105), col = brewer.pal(6, "OrRd")[6])
+            lines(c(0,1),c(0,0))
+            axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
+          } else {
+            barplot(100*Samples[[birdgs()+32]][sampShedID()],xlab = "", ylab = "Prevalence (%)",
+                    space = 0, names.arg = c("Total"), ylim = c(0,105))
+            lines(c(0,1),c(0,0))
+            axis(1, at=c(0,1), labels=FALSE, tick = TRUE)
+          }
         } else {
-          barplot(100*Samples[[birdgs()+32]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
-                  space = 0, col = histPrevCols(), names.arg = tvals(), ylim = c(0,105), xaxt = "n")
-          axis(1, at=c(seq(0.5,10.5,1)), labels=seq(2007,2017,1), tick = FALSE)
-          axis(1, at=c(seq(0,11,1)), labels=FALSE, tick = TRUE)
-          lines(c(0,11),c(0,0))
+          if (sampShedName() == "All watersheds"){
+            barplot(100*prevprev(),xlab = "", ylab = "Prevalence (%)",
+                    space = 0, names.arg = tvals(), ylim = c(0,105), xaxt = "n", col = brewer.pal(6, "OrRd")[6])
+            axis(1, at=c(seq(0.5,10.5,1)), labels=seq(2007,2017,1), tick = FALSE)
+            axis(1, at=c(seq(0,11,1)), labels=FALSE, tick = TRUE)
+            lines(c(0,11),c(0,0))
+          } else {
+            barplot(100*Samples[[birdgs()+32]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
+                    space = 0, col = histPrevCols(), names.arg = tvals(), ylim = c(0,105), xaxt = "n")
+            axis(1, at=c(seq(0.5,10.5,1)), labels=seq(2007,2017,1), tick = FALSE)
+            axis(1, at=c(seq(0,11,1)), labels=FALSE, tick = TRUE)
+            lines(c(0,11),c(0,0))
+          }
         }
       } else {
-        if (input$averaget == 1){
-          barplot(100*Samples[[birdgs()+32]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
-                  space = 0, col = histPrevCols(), names.arg = tvals(), ylim = c(0,105), xaxt = "n")
-          if (input$periodt == 3) {
-            axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
-            axis(1, at=c(seq(8/3,30,3)), labels=FALSE, tick = TRUE)
-            lines(c(0,30),c(0,0))
-          } else if (input$periodt == 2){
-            axis(1, at=c(5/3,seq(16/3,40,4)), labels=seq(2007,2016,1), tick = FALSE)
-            axis(1, at=c(seq(10/3,40,4)), labels=FALSE, tick = TRUE)
-            lines(c(0,40),c(0,0))
+        if (sampShedName() == "All watersheds"){
+          if (input$averaget == 1){
+            barplot(100*prevprev(),xlab = "", ylab = "Prevalence (%)",
+                    space = 0,  names.arg = tvals(), ylim = c(0,105), xaxt = "n", col = brewer.pal(6, "OrRd")[6])
+            if (input$periodt == 3) {
+              axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
+              axis(1, at=c(seq(8/3,30,3)), labels=FALSE, tick = TRUE)
+              lines(c(0,30),c(0,0))
+            } else if (input$periodt == 2){
+              axis(1, at=c(5/3,seq(16/3,40,4)), labels=seq(2007,2016,1), tick = FALSE)
+              axis(1, at=c(seq(10/3,40,4)), labels=FALSE, tick = TRUE)
+              lines(c(0,40),c(0,0))
+            } else {
+              axis(1, at=c(4.5,seq(15,120,12)), labels=seq(2007,2016,1), tick = FALSE)
+              axis(1, at=c(seq(9,120,12)), labels=FALSE, tick = TRUE)
+              lines(c(0,120),c(0,0))
+            }
           } else {
-            axis(1, at=c(4.5,seq(15,120,12)), labels=seq(2007,2016,1), tick = FALSE)
-            axis(1, at=c(seq(9,120,12)), labels=FALSE, tick = TRUE)
-            lines(c(0,120),c(0,0))
+            barplot(100*prevprev(),xlab = "", ylab = "Prevalence (%)",
+                    space = 0, names.arg = tvals(), ylim = c(0,105), col = brewer.pal(6, "OrRd")[6])
+            if (input$periodt == 3) {
+              axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,3),c(0,0))
+            } else if (input$periodt == 2){
+              axis(1, at=c(seq(0,4,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,4),c(0,0))
+            } else {
+              axis(1, at=c(seq(0,12,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,12),c(0,0))
+            }
           }
+          title(xlab = "Time", line=2.5)
         } else {
-          barplot(100*Samples[[birdgs()+32]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
-                  space = 0, col = histPrevCols(), names.arg = tvals(), ylim = c(0,105))
-          if (input$periodt == 3) {
-            axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
-            lines(c(0,3),c(0,0))
-          } else if (input$periodt == 2){
-            axis(1, at=c(seq(0,4,1)), labels=FALSE, tick = TRUE)
-            lines(c(0,4),c(0,0))
+          if (input$averaget == 1){
+            barplot(100*Samples[[birdgs()+32]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
+                    space = 0, col = histPrevCols(), names.arg = tvals(), ylim = c(0,105), xaxt = "n")
+            if (input$periodt == 3) {
+              axis(1, at=c(4/3,seq(25/6,30,3)), labels=seq(2007,2016,1), tick = FALSE)
+              axis(1, at=c(seq(8/3,30,3)), labels=FALSE, tick = TRUE)
+              lines(c(0,30),c(0,0))
+            } else if (input$periodt == 2){
+              axis(1, at=c(5/3,seq(16/3,40,4)), labels=seq(2007,2016,1), tick = FALSE)
+              axis(1, at=c(seq(10/3,40,4)), labels=FALSE, tick = TRUE)
+              lines(c(0,40),c(0,0))
+            } else {
+              axis(1, at=c(4.5,seq(15,120,12)), labels=seq(2007,2016,1), tick = FALSE)
+              axis(1, at=c(seq(9,120,12)), labels=FALSE, tick = TRUE)
+              lines(c(0,120),c(0,0))
+            }
           } else {
-            axis(1, at=c(seq(0,12,1)), labels=FALSE, tick = TRUE)
-            lines(c(0,12),c(0,0))
+            barplot(100*Samples[[birdgs()+32]][sampShedID(),],xlab = "", ylab = "Prevalence (%)",
+                    space = 0, col = histPrevCols(), names.arg = tvals(), ylim = c(0,105))
+            if (input$periodt == 3) {
+              axis(1, at=c(seq(0,3,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,3),c(0,0))
+            } else if (input$periodt == 2){
+              axis(1, at=c(seq(0,4,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,4),c(0,0))
+            } else {
+              axis(1, at=c(seq(0,12,1)), labels=FALSE, tick = TRUE)
+              lines(c(0,12),c(0,0))
+            }
           }
+          title(xlab = "Time", line=2.5)
         }
-        title(xlab = "Time", line=2.5)
       }
       if (is.null(input$timeline)){
         abline(v = daten()-0.5, lty = 2, lwd = 2, col = 'red')

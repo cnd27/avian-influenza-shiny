@@ -153,7 +153,7 @@ server <- function(session, input, output) {
       type = "notifications", 
       icon = " About",
       badgeStatus = NULL,
-      headerText = "This dashboard is a visualization of surveillance data for avian influenze in the USA.",
+      headerText = "This dashboard is a visualization of surveillance data for avian influenza in the USA.",
       notificationItem("Built using Shiny", icon = icon("external-link"),
                        href = "http://shiny.rstudio.com/")
     )

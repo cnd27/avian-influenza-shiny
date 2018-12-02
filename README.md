@@ -1,5 +1,5 @@
 # avian-influenze-shiny
 
-10.5281/zenodo.1855250
+https://zenodo.org/badge/160083367.svg
 
 Code for Shiny app hosted on https://christopherdavis.shinyapps.io/avianinfluenza/
